@@ -1,0 +1,677 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>天文闖關測驗</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;800&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --ink:#172033; --ink2:#3D4861; --muted:#646E83; --line:#D9DEE8; --soft:#E9EDF4;
+  --accent:#2C4C9C; --accent-soft:#E3E9F7; --gold:#95600F; --gold-soft:#F6EBD6; --warn:#A33A2A; --warn-soft:#F6E1DC; --good:#2F6B3A; --good-soft:#DFEFE1;
+  --paper:#FFFFFF; --paper-line:#D9DEE8;
+  --pen-k:#1B2233; --pen-r:#D23A2E; --pen-b:#2458D6; --pen-h:rgba(255,205,0,.42);
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1422; --surface:#151C2E; --ink:#E4E8F2; --ink2:#BCC4D6; --muted:#8C96AC; --line:#283149; --soft:#1B2338;
+    --accent:#93AEF0; --accent-soft:#1D2A4A; --gold:#E3B062; --gold-soft:#33291A; --warn:#EE8B78; --warn-soft:#3A2220; --good:#86C58F; --good-soft:#1D3322;
+    --paper:#FFFFFF; --paper-line:#3A4460;
+    --pen-k:#EEF1F8; --pen-r:#FF8373; --pen-b:#8DB0FF; --pen-h:rgba(255,214,90,.34);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1422; --surface:#151C2E; --ink:#E4E8F2; --ink2:#BCC4D6; --muted:#8C96AC; --line:#283149; --soft:#1B2338;
+  --accent:#93AEF0; --accent-soft:#1D2A4A; --gold:#E3B062; --gold-soft:#33291A; --warn:#EE8B78; --warn-soft:#3A2220; --good:#86C58F; --good-soft:#1D3322;
+  --paper:#FFFFFF; --paper-line:#3A4460;
+  --pen-k:#EEF1F8; --pen-r:#FF8373; --pen-b:#8DB0FF; --pen-h:rgba(255,214,90,.34);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.7;padding-inline:16px;padding-block:0 80px}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{font-family:var(--serif);line-height:1.3;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,5vw,40px);font-weight:800}
+h2{font-size:clamp(21px,3.2vw,26px);font-weight:800}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.top{padding-block:36px 20px;display:grid;gap:12px}
+.lede{color:var(--ink2);max-width:64ch}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:8px 16px 0}
+nav.tabs .in{max-width:860px;margin:0 auto;display:flex;gap:2px;overflow-x:auto}
+nav.tabs button{font:inherit;font-size:14.5px;font-weight:500;background:none;border:0;border-bottom:3px solid transparent;color:var(--ink2);padding:8px 12px 10px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+section.tab{padding-block:24px 8px;display:grid;gap:20px}
+
+/* rounds */
+.rounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.rd{font:inherit;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;display:grid;gap:2px;color:var(--ink)}
+.rd .no{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rd b{font-size:16px}
+.rd .lv{display:flex;gap:3px;margin-top:4px}
+.rd .lv i{width:14px;height:5px;border-radius:2px;background:var(--line)}
+.rd .lv i.on{background:var(--accent)}
+.rd .meta{font-size:12.5px;color:var(--muted)}
+.rd .done{font-size:12.5px;color:var(--good);font-weight:700}
+.rd.locked{opacity:.6}
+.rd.locked b::after{content:" 🔒";font-size:13px}
+.rd[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-soft)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label.fld{display:inline-flex;align-items:center;gap:8px;font-weight:500}
+input[type="number"],input[type="text"],textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+input[type="number"]{width:90px;font-family:var(--mono)}
+textarea{width:100%;min-height:160px;font-family:var(--mono);font-size:13px;line-height:1.6}
+.btn{font:inherit;font-weight:700;background:var(--accent);color:var(--surface);border:0;border-radius:8px;padding:9px 18px;cursor:pointer}
+.btn.ghost{background:none;color:var(--accent);border:1px solid var(--accent);font-weight:500;padding:6px 14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hint{font-size:13.5px;color:var(--muted)}
+.warn{color:var(--warn)}
+
+/* question */
+.qc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;scroll-margin-top:60px}
+.qh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.qno{font-family:var(--mono);font-weight:500;background:var(--ink);color:var(--surface);border-radius:6px;padding:0 8px;font-size:13.5px}
+.src{font-size:13px;color:var(--muted)}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:0 8px;color:var(--ink2)}
+.paper{background:var(--paper);border-radius:8px;border:1px solid var(--paper-line);padding:8px;overflow-x:auto}
+.paper img{display:block;width:100%;max-width:740px;height:auto;margin:0 auto}
+details.stem summary{cursor:pointer;font-size:13.5px;color:var(--accent)}
+details.stem[open] summary{margin-bottom:8px}
+.stext{font-size:16px;color:var(--ink)}
+.stext ol{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:2px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt span{display:grid;place-items:center;min-width:46px;height:40px;padding:0 10px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--mono);font-weight:500;font-size:16px;cursor:pointer;background:var(--bg);color:var(--ink)}
+.opt input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.opt input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.opt input:disabled + span{cursor:default}
+.opt.right span{border-color:var(--good);box-shadow:0 0 0 2px var(--good) inset}
+.fb{border-radius:8px;padding:10px 12px;display:grid;gap:6px;font-size:14.5px;color:var(--ink2)}
+.fb.ok{background:var(--good-soft)} .fb.part{background:var(--gold-soft)} .fb.no{background:var(--warn-soft)}
+.fb .v{font-weight:700;color:var(--ink)}
+.fb .trap{font-size:13.5px}
+
+.submitbar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);margin-inline:-16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.submitbar .in{max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+
+/* ink: handwriting layer on each question */
+.paper{position:relative;--pen-k:#1B2233; --pen-r:#D23A2E; --pen-b:#2458D6; --pen-h:rgba(255,205,0,.42);}
+.ink{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.inkcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;cursor:crosshair}
+body.finger .inkcv{touch-action:none}
+.stext.ink{border:1px dashed var(--line);border-radius:8px;padding:10px 12px 0}
+/* blank scratch space under each question, part of the same drawing surface */
+.scratch{height:calc(var(--sp,1) * 240px);margin-top:10px;border-top:1px dashed #C9D0DD;position:relative}
+.stext .scratch{border-top-color:var(--line);margin-inline:-12px}
+.scratch span{position:absolute;top:6px;left:10px;font-size:12px;color:#8C96AC;pointer-events:none}
+.morespace{justify-self:start;font:inherit;font-size:13px;background:none;border:1px dashed var(--line);border-radius:8px;color:var(--ink2);padding:6px 12px;cursor:pointer}
+.inkclr{margin-left:auto;font:inherit;font-size:13px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:4px 2px}
+.refnote{font-size:13.5px;color:var(--ink2);background:var(--gold-soft);border-radius:8px;padding:6px 10px}
+.tools{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tl{font:inherit;font-size:11.5px;line-height:1.1;display:inline-grid;justify-items:center;align-content:center;gap:2px;min-width:46px;height:46px;padding:3px 6px;border:1px solid transparent;border-radius:8px;background:none;color:var(--ink2);cursor:pointer}
+.tl svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tl[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.tl:disabled{opacity:.4;cursor:default}
+.sw{width:30px;height:30px;margin:0 3px;border-radius:50%;border:2px solid var(--surface);background:var(--c);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.tsep{width:1px;height:30px;background:var(--line);margin-inline:4px}
+.subgrp{display:flex;gap:10px;align-items:center;margin-left:auto}
+
+.sent{color:var(--good);font-weight:700}
+.dot.ans{width:auto;min-width:28px;padding:0 4px;position:relative}
+.dot.ink::after{content:"✎";position:absolute;top:-7px;right:-5px;font-size:11px;color:var(--accent)}
+td.ord{font-size:12px;color:var(--muted);white-space:nowrap}
+.result{display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.score{font-family:var(--mono);font-size:44px;font-weight:500;line-height:1}
+.score small{font-size:18px;color:var(--muted)}
+.code{font-family:var(--mono);font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 12px;word-break:break-all;user-select:all}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
+.dot{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:6px;font-family:var(--mono);font-size:12px;text-decoration:none;color:var(--ink)}
+.dot.ok{background:var(--good-soft);color:var(--good)} .dot.part{background:var(--gold-soft);color:var(--gold)} .dot.no{background:var(--warn-soft);color:var(--warn)}
+.dots{display:flex;flex-wrap:wrap;gap:5px}
+
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--ink2);white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:4px;background:var(--soft);min-width:80px;overflow:hidden}
+.bar i{display:block;height:100%}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+footer a{color:var(--accent);word-break:break-all}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">地球科學 · 學測天文 · 分回練習</span>
+  <h1>天文闖關測驗</h1>
+  <p class="lede">一共 5 回，由易到難，每週一開放新的一回，每回大約 15 分鐘。交卷後會立刻看到分數和詳解，成績也會自動送給老師。</p>
+</header>
+
+<section class="tab" id="quiz">
+  <div class="rounds" id="rounds"></div>
+  <div class="panel">
+    <div class="row">
+      <label class="fld" for="seat">座號</label><input type="text" id="seat" maxlength="2" autocomplete="off" autocapitalize="characters" placeholder="例 12" style="width:90px;font-family:var(--mono)">
+      <label class="fld" for="sname">姓名</label><input type="text" id="sname" maxlength="20" autocomplete="name" placeholder="例 王小明" style="width:140px">
+      <span class="hint">交卷前一定要填，成績會自動送給老師。</span>
+    </div>
+    <p class="hint">可以直接用 Apple Pencil 在題目上畫圖、做記號，手指照常捲動頁面；工具在畫面最下方。沒有觸控筆的話，按下方「手指畫」就能用手指畫（這時要在題目圖片外面捲動）。筆跡會自動存在這台裝置上。</p>
+    <p class="hint">多選題的計分和學測一樣：選項有 n 個，錯 k 個得 (n−2k)/n 題分，最低 0 分。</p>
+  </div>
+  <div id="qlist" style="display:grid;gap:16px"></div>
+  <div id="result" hidden></div>
+</section>
+
+<footer>
+  <span>題目與答案：<a href="https://www.ceec.edu.tw/xmfile?xsmsid=0J052424829869345634">大考中心・學測歷屆試題</a>；標示「自編」的題目為講義自編練習題。</span>
+  <span>完整詳解與題型歸納請看天文衝刺講義。</span>
+</footer>
+</div>
+
+<script>
+const Q=[];
+const SOL={};Q.forEach(q=>{SOL[q.id]=q});
+const STEMS={'110-63':'110-g63','112-41':'112-g41','112-42':'112-g41','112-43':'112-g41','113-54':'113-g54','113-55':'113-g54','114-22':'114-g22','114-23':'114-g22','115-51':'115-g50','110-64':'110-g63'};
+/* questions that say 承上題 but whose previous item is in another round */
+const REFNOTE={'110-64':'「承上題」指 110 學測第 63 題（在第 3 回），兩題共用上方題組引文的表 2，本題只要看表 2 就能作答。'};
+/* multi-select items (應選 n 項) and option counts */
+const MULTI={'108-18':5,'108-20':6,'109-33':5,'109-34':5,'111-28':5,'111-30':5,'112-5':5,'113-33':5,'113-54':5,'114-10':5,'114-11':5,'114-23':5};
+const NOPT={'108-20':6};
+const SELF={};
+const ROUNDS=[
+ {name:'暖身',lv:1,ids:[],n:10},
+ {name:'基礎',lv:2,ids:[],n:10},
+ {name:'觀念',lv:3,ids:[],n:9},
+ {name:'應用',lv:4,ids:[],n:9},
+ {name:'挑戰',lv:5,ids:[],n:10}
+];
+/* 'all' = 總表 (every round + teacher tab); 'locked' = published site; 'teacher' = 老師統計 */
+const MODE=/*MODE*/{kind:'locked'}/*/MODE*/;
+/* Google Apps Script web-app URL that writes submissions into the teacher's sheet (see Google試算表程式.gs) */
+const SUBMIT_URL='https://script.google.com/macros/s/AKfycbw8Qd6AknqHgxBaQqe5m7lWvQFVYJkZLFDJCpBWNKAoRt59NlkKlaRuNM9aQvJHwi0dww/exec';
+const LETTERS='ABCDEF';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function meta(id){
+  if(SELF[id]){const s=SELF[id];return {id,self:true,ans:s.ans,n:s.opts.length,multi:false,sol:s.sol,trap:s.trap,sk:s.sk}}
+  const q=SOL[id];return {id,self:false,ans:q.ans,n:NOPT[id]||5,multi:!!MULTI[id],sol:q.sol,trap:q.trap,sk:q.sk,d:q.d}
+}
+function grade(m,picked){ // picked string like "CE"
+  if(!picked) return 0;
+  if(!m.multi) return picked===m.ans?1:0;
+  let k=0;for(let i=0;i<m.n;i++){const L=LETTERS[i];if(picked.includes(L)!==m.ans.includes(L))k++}
+  return Math.max(0,(m.n-2*k)/m.n);
+}
+
+/* state */
+let cur=0; let answers={}; let submitted=false;
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+const doneMap=load('astro-quiz-done',{});
+
+function renderRounds(){
+  if(MODE.kind==='teacher')return;
+  $('#rounds').innerHTML=ROUNDS.map((r,i)=>{
+    const st=SCHED&&SCHED[i+1],locked=MODE.kind==='locked'&&!(st&&st.open);
+    return `<button class="rd${locked?' locked':''}" data-i="${i}" aria-pressed="${i===cur}">
+    <span class="no">第 ${i+1} 回</span><b>${r.name}</b>
+    <span class="lv" aria-label="難度 ${r.lv} / 5">${[1,2,3,4,5].map(k=>`<i class="${k<=r.lv?'on':''}"></i>`).join('')}</span>
+    <span class="meta">${locked?(st?`${when(st.opens)} 開放`:'尚未開放'):`${r.ids.length||r.n} 題`}</span>${doneMap[i]!=null?`<span class="done">已完成 ${doneMap[i]} 分</span>`:''}</button>`}).join('');
+  document.querySelectorAll('.rd').forEach(b=>b.addEventListener('click',()=>openRound(+b.dataset.i)));
+}
+const SPACE=load('astro-quiz-space',{}); // question id -> scratch height in 240px steps
+const scratch=id=>`<div class="scratch" style="--sp:${SPACE[id]||1}"><span>草稿區</span></div>`;
+function qHTML(id,idx){
+  const m=meta(id);
+  let body='';
+  if(m.self){const s=SELF[id];body=`<div class="stext ink" data-k="${id}"><p>${esc(s.text)}</p><ol>${s.opts.map((o,i)=>`<li>(${LETTERS[i]}) ${esc(o)}</li>`).join('')}</ol>${scratch(id)}</div>`}
+  else{const st=STEMS[id];body=(st?`<details class="stem" open><summary>題組引文</summary><div class="paper ink" data-k="${id}~stem"><img src="${imgSrc(st)}" alt="題組引文" loading="lazy"></div></details>`:'')+`<div class="paper ink" data-k="${id}"><img src="${imgSrc(id)}" alt="${id.slice(0,3)} 年學測第 ${id.slice(4)} 題" loading="lazy">${scratch(id)}</div>`}
+  const type=m.multi?'checkbox':'radio';
+  const opts=Array.from({length:m.n},(_,i)=>LETTERS[i]).map(L=>`<label class="opt"><input type="${type}" name="a-${id}" value="${L}" id="o-${id}-${L}"><span>${L}</span></label>`).join('');
+  return `<article class="qc" id="c-${id}">
+    <div class="qh"><span class="qno">${idx+1}</span><span class="src">${m.self?'自編練習':id.slice(0,3)+' 學測 · 第 '+id.slice(4)+' 題'}</span><span class="pill">${m.multi?'多選':'單選'}</span><button class="inkclr" data-id="${id}" hidden>清除筆跡</button></div>
+    ${REFNOTE[id]?`<p class="refnote">${REFNOTE[id]}</p>`:''}
+    ${body}
+    <button class="morespace" data-id="${id}"${(SPACE[id]||1)>=5?' hidden':''}>＋ 加大草稿區</button>
+    <div class="opts" role="group" aria-label="第 ${idx+1} 題選項">${opts}</div>
+    <div class="fbwrap"></div></article>`;
+}
+function startRound(){
+  submitted=false;
+  answers=load('astro-quiz-draft-'+cur,{});
+  habit=Object.assign({secs:{},changes:{},order:[],total:0},load('astro-quiz-habit-'+cur,{}));
+  renderRounds();
+  const r=ROUNDS[cur];
+  $('#qlist').innerHTML=r.ids.map(qHTML).join('')+`<div class="submitbar"><div class="in">${toolsHTML()}<div class="subgrp"><span class="hint" id="prog"></span><button class="btn" id="submit">交卷</button></div></div></div>`;
+  mountInk();
+  r.ids.forEach(id=>{(answers[id]||'').split('').forEach(L=>{const el=document.getElementById('o-'+id+'-'+L);if(el)el.checked=true})});
+  $('#submit').addEventListener('click',submit);
+  $('#result').hidden=true;$('#result').innerHTML='';
+  updateProg();
+}
+function onPick(e){
+  if(submitted||!e.target.name||!e.target.name.startsWith('a-'))return;
+  const id=e.target.name.slice(2);
+  const prev=answers[id]||'';
+  const now=[...document.querySelectorAll(`input[name="a-${id}"]:checked`)].map(x=>x.value).sort().join('');
+  // a change = dropping an option that was already picked
+  if([...prev].some(L=>!now.includes(L)))habit.changes[id]=(habit.changes[id]||0)+1;
+  if(now&&!habit.order.includes(id))habit.order.push(id);
+  answers[id]=now;
+  store('astro-quiz-draft-'+cur,answers);store('astro-quiz-habit-'+cur,habit);updateProg();
+}
+function updateProg(){const r=ROUNDS[cur];const n=r.ids.filter(id=>answers[id]).length;const p=$('#prog');if(p)p.textContent=`已作答 ${n} / ${r.ids.length} 題`}
+
+function nextHTML(){
+  if(cur>=ROUNDS.length-1)return '5 回都完成了！</p>';
+  const st=SCHED&&SCHED[cur+2];
+  if(MODE.kind==='locked'&&!(st&&st.open))return `第 ${cur+2} 回${st?`在 ${when(st.opens)} `:'之後'}開放。</p>`;
+  return `準備好了再挑戰第 ${cur+2} 回。</p><button class="btn ghost" id="next">前往第 ${cur+2} 回</button>`;
+}
+
+/* locked mode (the published site): each round is an encrypted file (r1.dat…); the Apps Script
+   hands out a round's key only once that round has opened, so nothing can be read early */
+const IMG={}; // image name -> data URL, filled when a round is decrypted
+const imgSrc=n=>IMG[n]||`q/${n}.webp`;
+let SCHED=null; // round number -> {opens, open}
+const LOADED={};
+const when=iso=>{const d=new Date(iso);return `${d.getMonth()+1}/${d.getDate()}（${'日一二三四五六'[d.getDay()]}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+async function api(params){
+  if(!SUBMIT_URL)throw new Error('老師還沒設定網址');
+  const j=await (await fetch(SUBMIT_URL+'?'+new URLSearchParams(params))).json();
+  if(!j.ok)throw new Error(j.error||'讀取失敗');return j;
+}
+async function loadSchedule(){SCHED=(await api({action:'schedule'})).rounds}
+async function unlock(ri){
+  if(LOADED[ri])return;
+  const keys=load('astro-quiz-keys',{});
+  const buf=await (await fetch(`r${ri+1}.dat`,{cache:'no-cache'})).arrayBuffer();
+  let plain;
+  for(let tries=0;;tries++){
+    if(!keys[ri+1]){keys[ri+1]=(await api({action:'key',round:ri+1})).key;store('astro-quiz-keys',keys)}
+    try{
+      const k=await crypto.subtle.importKey('raw',Uint8Array.from(atob(keys[ri+1]),c=>c.charCodeAt(0)),'AES-GCM',false,['decrypt']);
+      plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(buf,0,12)},k,new Uint8Array(buf,12));break;
+    }catch(e){if(tries)throw new Error('題目檔無法解開');delete keys[ri+1]} // key saved from an older version: fetch it again
+  }
+  const d=JSON.parse(new TextDecoder().decode(plain));
+  d.Q.forEach(q=>{SOL[q.id]=q});Object.assign(SELF,d.SELF);Object.assign(IMG,d.IMG);ROUNDS[ri].ids=d.ids;
+  LOADED[ri]=true;
+}
+async function openRound(ri){
+  cur=ri;
+  if(MODE.kind==='locked'){
+    const note=t=>{renderRounds();$('#result').hidden=true;$('#qlist').innerHTML=`<div class="panel"><p>${t}</p></div>`};
+    let st=SCHED&&SCHED[ri+1];
+    if(!(st&&st.open)){try{await loadSchedule();st=SCHED[ri+1]}catch(e){}} // it may have just opened
+    if(!(st&&st.open))return note(st?`第 ${ri+1} 回將在 <b>${when(st.opens)}</b> 開放，到時候再回來。`:'這一回還沒開放。');
+    if(!LOADED[ri]){
+      note('題目載入中…');
+      try{await unlock(ri)}catch(e){return note(`<span class="warn">題目載入失敗（${esc(e.message)}）。請確認有連上網路，再重新整理頁面。</span>`)}
+    }
+  }
+  if(history.replaceState&&MODE.kind!=='teacher')history.replaceState(null,'',location.pathname+location.search+'#r'+(ri+1));
+  startRound();
+}
+async function bootLocked(){
+  $('#qlist').innerHTML='<div class="panel"><p>載入中…</p></div>';
+  try{await loadSchedule()}catch(e){renderRounds();$('#qlist').innerHTML=`<div class="panel"><p class="warn">無法取得開放時間（${esc(e.message)}）。請確認有連上網路，再重新整理頁面。</p></div>`;return}
+  const open=ROUNDS.map((_,i)=>i).filter(i=>SCHED[i+1]&&SCHED[i+1].open);
+  const h=/^#r([1-9])$/.exec(location.hash);
+  openRound(h&&open.includes(+h[1]-1)?+h[1]-1:open.length?open[open.length-1]:0);
+}
+
+/* habits: active seconds per question, answer changes, answering order */
+let habit={secs:{},changes:{},order:[],total:0}, lastAct=Date.now(), lastCard=null, lastCardAt=0;
+['pointerdown','pointermove','keydown','scroll','touchstart'].forEach(t=>addEventListener(t,e=>{
+  lastAct=Date.now();
+  const c=e.target&&e.target.closest&&e.target.closest('.qc');if(c&&t!=='scroll'){lastCard=c;lastCardAt=lastAct}
+},{passive:true,capture:true}));
+setInterval(()=>{
+  // idle for 90 s or app in background: not counted
+  if(MODE.kind==='teacher'||submitted||document.hidden||Date.now()-lastAct>90000||$('#quiz').hidden)return;
+  habit.total++;
+  // the card being written on, otherwise the card crossing the reading line
+  let card=Date.now()-lastCardAt<10000&&lastCard&&lastCard.isConnected?lastCard:null;
+  if(!card){const y=innerHeight*0.4;card=[...document.querySelectorAll('.qc')].find(c=>{const b=c.getBoundingClientRect();return b.top<=y&&b.bottom>=y})}
+  if(card){const id=card.id.slice(2);habit.secs[id]=(habit.secs[id]||0)+1}
+  if(habit.total%5===0)store('astro-quiz-habit-'+cur,habit);
+},1000);
+
+function submit(){
+  const seatEl=$('#seat'),nameEl=$('#sname');const sv=seatEl.value.trim();
+  // seat "TA" = teacher's test run: recorded, but left out of the class statistics by default
+  const test=/^ta$/i.test(sv);const seat=test?'TA':/^\d{1,2}$/.test(sv)?+sv:NaN;const name=nameEl.value.trim()||(test?'測試':'');
+  const need=(el,t)=>{el.focus();$('#prog').innerHTML=`<span class="warn">${t}</span>`;el.scrollIntoView({block:'center'})};
+  if(!test&&!(seat>=1&&seat<=99))return need(seatEl,'請先在上方填座號（1–99）');
+  if(!name)return need(nameEl,'請先在上方填姓名');
+  store('astro-quiz-seat',seat);store('astro-quiz-name',name);
+  const r=ROUNDS[cur];const blanks=r.ids.filter(id=>!answers[id]).length;
+  const btn=$('#submit');
+  if(blanks&&btn.dataset.confirm!=='1'){btn.dataset.confirm='1';btn.textContent=`還有 ${blanks} 題沒寫，確定交卷`;return}
+  submitted=true;
+  let total=0;const marks=[];
+  r.ids.forEach((id,i)=>{
+    const m=meta(id);const p=answers[id]||'';const g=grade(m,p);total+=g;marks.push(g);
+    document.querySelectorAll(`input[name="a-${id}"]`).forEach(x=>{x.disabled=true;if(m.ans.includes(x.value))x.parentElement.classList.add('right')});
+    const cls=g===1?'ok':g>0?'part':'no';
+    const verdict=g===1?'答對':g>0?`部分得分 ${Math.round(g*100)}%`:(p?'答錯':'未作答');
+    document.querySelector(`#c-${CSS.escape(id)} .fbwrap`).innerHTML=`<div class="fb ${cls}"><p><span class="v">${verdict}</span>　你的答案 <span class="mono">${p||'—'}</span>　正確答案 <span class="mono">${m.ans}</span>　<span class="hint">練到：${esc(m.sk)}</span></p><p>${m.sol}</p><p class="trap"><b>陷阱　</b>${m.trap}</p></div>`;
+  });
+  const pct=Math.round(total/r.ids.length*100);
+  doneMap[cur]=pct;store('astro-quiz-done',doneMap);
+  btn.disabled=true;btn.textContent='已交卷';
+  renderRounds();
+  const res=$('#result');
+  res.innerHTML=`<div class="result">
+    <span class="eyebrow">第 ${cur+1} 回 · ${ROUNDS[cur].name} · 座號 ${seat} ${esc(name)}</span>
+    <div class="score">${pct}<small> 分</small></div>
+    <div class="dots">${r.ids.map((id,i)=>{const g=marks[i];return `<a class="dot ${g===1?'ok':g>0?'part':'no'}" href="#c-${id}" title="第 ${i+1} 題">${i+1}</a>`}).join('')}</div>
+    <div class="grid2"><div style="display:grid;gap:8px;align-content:start"><b>成績送出</b><p id="sendmsg" class="hint">正在準備…</p><div><button class="btn" id="resend" hidden>重新送出</button></div></div>
+    <div style="display:grid;gap:6px;align-content:start"><b>接下來</b><p class="hint">每題下方都有詳解和陷阱，先把錯的題目看完。${nextHTML()}</div></div>
+  </div>`;
+  res.hidden=false;
+  $('#resend').addEventListener('click',flushOutbox);
+  const nx=$('#next');if(nx)nx.addEventListener('click',()=>{openRound(cur+1);window.scrollTo({top:0})});
+  const rec={uid:Date.now().toString(36)+Math.random().toString(36).slice(2,8),round:cur+1,seat,name,test,score:pct,at:new Date().toISOString(),
+    ids:r.ids.slice(),answers:r.ids.map(id=>answers[id]||''),marks:marks.map(g=>Math.round(g*100)/100),
+    secs:r.ids.map(id=>habit.secs[id]||0),changes:r.ids.map(id=>habit.changes[id]||0),
+    order:habit.order.map(id=>r.ids.indexOf(id)+1).filter(n=>n>0),totalSec:habit.total};
+  try{localStorage.removeItem('astro-quiz-draft-'+cur);localStorage.removeItem('astro-quiz-habit-'+cur)}catch(e){}
+  res.scrollIntoView({block:'start'});
+  sendRecord(rec);
+}
+
+/* sending: every submission goes to an outbox on this device first, so nothing is lost offline */
+function setSend(html,retry){const m=$('#sendmsg');if(m)m.innerHTML=html;const b=$('#resend');if(b)b.hidden=!retry}
+async function sendRecord(rec){
+  setSend('正在整理題目上的筆跡…');
+  try{rec.ink=inkImages(rec.ids)}catch(e){rec.ink={}}
+  const box=load('astro-quiz-outbox',[]);box.push(rec);
+  if(!store('astro-quiz-outbox',box)){rec.ink={};rec.inkDropped=true;box[box.length-1]=rec;store('astro-quiz-outbox',box)}
+  flushOutbox();
+}
+let flushing=false;
+async function flushOutbox(){
+  const box=load('astro-quiz-outbox',[]);
+  if(flushing||!box.length)return;
+  if(!SUBMIT_URL){setSend('<span class="warn">老師還沒設定收件網址。成績已先存在這台裝置上，設定好以後再打開測驗會自動送出。</span>',false);return}
+  flushing=true;setSend('正在把成績送給老師…',false);
+  let last=null,fail=null;
+  for(const rec of box){
+    try{
+      const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),60000);
+      const res=await fetch(SUBMIT_URL,{method:'POST',body:JSON.stringify(rec),signal:ctl.signal});clearTimeout(t);
+      const j=await res.json();if(!j.ok)throw new Error(j.error||'收件端錯誤');
+      last={rec,j};
+      store('astro-quiz-outbox',load('astro-quiz-outbox',[]).filter(x=>x.uid!==rec.uid));
+    }catch(e){fail=e.name==='AbortError'?new Error('連線逾時'):e instanceof TypeError?new Error('沒有連上網路'):e;break}
+  }
+  flushing=false;
+  if(fail)setSend(`<span class="warn">還沒送出（${esc(fail.message)}）。成績已存在這台裝置上，確認有連上網路後按「重新送出」；下次打開測驗也會自動再送。</span>`,true);
+  else if(last)setSend(`<span class="sent">✓ 已送到老師那裡</span>　第 ${last.rec.round} 回・第 ${last.j.attempt} 次作答${last.rec.inkDropped?'（筆跡太大，這次只送出答案）':''}`,false);
+}
+
+/* ink snapshots for the teacher: question image + strokes, one JPEG per question that has ink */
+const PAPER_INK={k:'#1B2233',r:'#D23A2E',b:'#2458D6',h:'rgba(255,205,0,.42)'};
+function inkImages(ids){
+  const out={};
+  ids.forEach(id=>{
+    if(!(INK[id]||[]).length&&!(INK[id+'~stem']||[]).length)return;
+    const parts=[id+'~stem',id].map(k=>SURF.get(k)).filter(s=>s&&s.w&&s.h);
+    if(!parts.length)return;
+    // a page opened from a local file can't export its images; fall back to ink on white
+    try{out[id]=snapshot(parts,true)}catch(e){out[id]=snapshot(parts,false)}
+  });
+  return out;
+}
+function snapshot(parts,withImg){
+  const W=900,gap=14,hs=parts.map(s=>Math.round(s.h*W/s.w));
+  const cv=document.createElement('canvas');cv.width=W;cv.height=hs.reduce((a,b)=>a+b,0)+gap*(parts.length-1);
+  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);
+  let y=0;
+  parts.forEach((s,i)=>{
+    const k=W/s.w;c.save();c.translate(0,y);
+    const img=s.el.querySelector('img');
+    if(withImg&&img&&img.naturalWidth)c.drawImage(img,img.offsetLeft*k,img.offsetTop*k,img.offsetWidth*k,img.offsetHeight*k);
+    if(s.el.classList.contains('stext'))drawText(c,s.el,k);
+    drawStrokes(c,INK[s.k]||[],W,key=>PAPER_INK[key]);
+    c.restore();
+    if(i<parts.length-1){c.fillStyle='#D9DEE8';c.fillRect(0,y+hs[i]+gap/2-1,W,2)}
+    y+=hs[i]+gap;
+  });
+  return cv.toDataURL('image/jpeg',0.82);
+}
+function drawText(c,el,k){
+  const base=el.getBoundingClientRect();
+  el.querySelectorAll('p,li').forEach(n=>{
+    const b=n.getBoundingClientRect(),cs=getComputedStyle(n);
+    const fs=parseFloat(cs.fontSize)*k,lh=(parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.7)*k;
+    c.font=`${fs}px ${cs.fontFamily}`;c.fillStyle='#172033';c.textBaseline='alphabetic';
+    let line='',y=(b.top-base.top)*k+lh*0.72;const x=(b.left-base.left)*k,maxW=b.width*k;
+    for(const ch of n.textContent){if(c.measureText(line+ch).width>maxW&&line){c.fillText(line,x,y);line='';y+=lh}line+=ch}
+    if(line)c.fillText(line,x,y);
+  });
+}
+
+/* ink: Apple Pencil (or finger / mouse) notes drawn on top of each question */
+const INK=load('astro-quiz-ink',{}); // surface key -> strokes {t,c,w,p:[x,y,...]}, coords and width ÷ surface width
+const pen=Object.assign({tool:'pen',color:'k',finger:false},load('astro-quiz-pen',{}));
+const undoStack=[];
+const SURF=new Map();
+let active=null, inkSaveT=0;
+const ICON={
+  pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
+  hl:'<path d="M5 19h6"/><path d="M9 15l-2-2 8-8 4 4-8 8z"/><path d="M7 13l-2 4h4"/>',
+  line:'<path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/>',
+  eraser:'<path d="M8 19l-4-4 9-9 7 7-6 6z"/><path d="M8 19h12"/><path d="M9 10l7 7"/>',
+  undo:'<path d="M9 7L5 11l4 4"/><path d="M5 11h9a5 5 0 010 10h-3"/>',
+  finger:'<path d="M9 11V5a1.5 1.5 0 013 0v5"/><path d="M12 10V8.5a1.5 1.5 0 013 0V11"/><path d="M15 10.5a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1a5 5 0 01-4-2l-3-4a1.5 1.5 0 012.3-1.9L9 15"/>'
+};
+const TOOLS=[['pen','筆'],['hl','螢光筆'],['line','直線'],['eraser','橡皮擦']];
+const COLORS=[['k','黑'],['r','紅'],['b','藍']];
+function svg(n){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`}
+function toolsHTML(){
+  return `<div class="tools" role="toolbar" aria-label="繪圖工具">
+    ${TOOLS.map(([t,n])=>`<button class="tl" data-tool="${t}" aria-pressed="${pen.tool===t}">${svg(t)}${n}</button>`).join('')}
+    <span class="tsep"></span>
+    ${COLORS.map(([c,n])=>`<button class="sw" data-color="${c}" style="--c:var(--pen-${c})" aria-label="${n}色" aria-pressed="${pen.color===c}"></button>`).join('')}
+    <span class="tsep"></span>
+    <button class="tl" id="undo" disabled>${svg('undo')}復原</button>
+    <button class="tl" id="finger" aria-pressed="${pen.finger}">${svg('finger')}手指畫</button>
+  </div>`;
+}
+function syncTools(){
+  document.querySelectorAll('.tl[data-tool]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===pen.tool));
+  document.querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===pen.color&&(pen.tool==='pen'||pen.tool==='line')));
+  const f=$('#finger');if(f)f.setAttribute('aria-pressed',pen.finger);
+  const u=$('#undo');if(u)u.disabled=!undoStack.length;
+  document.body.classList.toggle('finger',pen.finger);
+  store('astro-quiz-pen',pen);
+}
+function saveInk(){clearTimeout(inkSaveT);inkSaveT=setTimeout(()=>{for(const k in INK)if(!INK[k].length)delete INK[k];store('astro-quiz-ink',INK)},300)}
+const ro=new ResizeObserver(es=>es.forEach(e=>{const s=SURF.get(e.target.dataset.k);if(s)sizeSurf(s)}));
+function mountInk(){
+  ro.disconnect();SURF.clear();active=null;
+  document.querySelectorAll('#qlist .ink').forEach(el=>{
+    const cv=document.createElement('canvas');cv.className='inkcv';cv.setAttribute('aria-hidden','true');el.appendChild(cv);
+    const s={k:el.dataset.k,el,cv,ctx:cv.getContext('2d'),w:0,h:0,dpr:1,live:null};
+    SURF.set(s.k,s);bindSurf(s);ro.observe(el);
+  });
+  syncTools();refreshClear();
+}
+// canvases only get pixels once they hold ink, so a round of tall images stays within iPad canvas memory
+function sizeSurf(s){
+  s.w=s.el.clientWidth;s.h=s.el.clientHeight;s.dpr=Math.min(window.devicePixelRatio||1,2);
+  const need=s.w&&s.h&&((INK[s.k]||[]).length||s.live);
+  const W=need?Math.round(s.w*s.dpr):0,H=need?Math.round(s.h*s.dpr):0;
+  if(s.cv.width!==W||s.cv.height!==H){s.cv.width=W;s.cv.height=H}
+  redraw(s);
+}
+function redraw(s){
+  const c=s.ctx;if(!s.cv.width)return;
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,s.cv.width,s.cv.height);
+  const cs=getComputedStyle(s.el),col=k=>cs.getPropertyValue('--pen-'+k).trim();
+  const U=s.w*s.dpr;
+  const list=INK[s.k]||[];
+  drawStrokes(c,s.live?list.concat([s.live]):list,U,col);
+  // angle readout while drawing a straight line (0–90° from horizontal)
+  const L=s.live;
+  if(L&&L.t==='line'&&L.p.length===4){
+    const dx=L.p[2]-L.p[0],dy=L.p[3]-L.p[1];
+    if(Math.hypot(dx,dy)*s.w>12){
+      let a=Math.abs(Math.atan2(-dy,dx)*180/Math.PI);if(a>90)a=180-a;
+      const t=Math.round(a)+'°',x=L.p[2]*U+10*s.dpr,y=L.p[3]*U-10*s.dpr;
+      c.font=`500 ${13*s.dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono')}`;
+      const w=c.measureText(t).width;
+      c.fillStyle='rgba(23,32,51,.82)';c.beginPath();c.roundRect?c.roundRect(x-4*s.dpr,y-15*s.dpr,w+8*s.dpr,20*s.dpr,5*s.dpr):c.rect(x-4*s.dpr,y-15*s.dpr,w+8*s.dpr,20*s.dpr);c.fill();
+      c.fillStyle='#fff';c.fillText(t,x,y);
+    }
+  }
+}
+function drawStrokes(c,list,U,col){
+  for(const st of list){
+    const p=st.p;c.strokeStyle=c.fillStyle=col(st.c);c.lineWidth=st.w*U;c.lineCap='round';c.lineJoin='round';
+    c.beginPath();
+    if(p.length===2){c.arc(p[0]*U,p[1]*U,st.w*U/2,0,Math.PI*2);c.fill();continue}
+    c.moveTo(p[0]*U,p[1]*U);
+    if(p.length===4)c.lineTo(p[2]*U,p[3]*U);
+    else{for(let i=2;i<p.length-2;i+=2)c.quadraticCurveTo(p[i]*U,p[i+1]*U,(p[i]+p[i+2])/2*U,(p[i+1]+p[i+3])/2*U);c.lineTo(p[p.length-2]*U,p[p.length-1]*U)}
+    c.stroke();
+  }
+}
+function canDraw(e){
+  if(e.pointerType==='pen')return true;
+  if(e.pointerType==='mouse')return e.button===0;
+  return pen.finger&&e.isPrimary;
+}
+function bindSurf(s){
+  const cv=s.cv;
+  // Safari reports Apple Pencil as touches too; block scrolling for those so the pencil draws instead
+  const stylus=e=>{if(active||[...e.changedTouches].some(t=>t.touchType==='stylus'))e.preventDefault()};
+  cv.addEventListener('touchstart',stylus,{passive:false});
+  cv.addEventListener('touchmove',stylus,{passive:false});
+  cv.addEventListener('pointerdown',e=>{
+    if(active||!canDraw(e))return;
+    e.preventDefault();
+    try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    const r=cv.getBoundingClientRect();
+    active={s,id:e.pointerId,r,before:(INK[s.k]||[]).slice(),changed:false};
+    const pt=pos(e);
+    if(pen.tool==='eraser'){eraseAt(pt);return}
+    const hl=pen.tool==='hl';
+    s.live={t:pen.tool,c:hl?'h':pen.color,w:(hl?18:pen.tool==='line'?2.2:2.4)/s.w,p:pen.tool==='line'?[pt[0],pt[1],pt[0],pt[1]]:[pt[0],pt[1]]};
+    sizeSurf(s);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!active||active.id!==e.pointerId||active.s!==s)return;
+    e.preventDefault();
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];
+    for(const ev of evs.length?evs:[e]){
+      const pt=pos(ev);
+      if(pen.tool==='eraser'){eraseAt(pt);continue}
+      const p=s.live.p;
+      if(s.live.t==='line'){p[2]=pt[0];p[3]=pt[1];continue}
+      if(Math.hypot(pt[0]-p[p.length-2],pt[1]-p[p.length-1])*s.w>=1.2)p.push(pt[0],pt[1]);
+    }
+    paint(s);
+  });
+  const end=e=>{
+    if(!active||active.id!==e.pointerId||active.s!==s)return;
+    const L=s.live;s.live=null;
+    if(L){
+      const tooShort=L.t==='line'&&Math.hypot(L.p[2]-L.p[0],L.p[3]-L.p[1])*s.w<4;
+      if(!tooShort&&e.type!=='pointercancel'){
+        L.p=L.p.map(v=>Math.round(v*1e4)/1e4);
+        (INK[s.k]=INK[s.k]||[]).push(L);active.changed=true;
+      }
+    }
+    if(active.changed)commit([[s.k,active.before]]);
+    active=null;sizeSurf(s);
+  };
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+}
+function pos(e){const{r,s}=active;return[(e.clientX-r.left)/s.w,(e.clientY-r.top)/s.w]}
+let rafS=null;
+function paint(s){if(rafS)return;rafS=s;requestAnimationFrame(()=>{const t=rafS;rafS=null;redraw(t)})}
+function eraseAt(pt){
+  const s=active.s,list=INK[s.k];if(!list||!list.length)return;
+  const R=12/s.w;
+  const keep=list.filter(st=>!hits(st,pt,R+st.w/2));
+  if(keep.length!==list.length){INK[s.k]=keep;active.changed=true;paint(s)}
+}
+function hits(st,[x,y],R){
+  const p=st.p;
+  if(p.length===2)return Math.hypot(p[0]-x,p[1]-y)<=R;
+  for(let i=0;i<p.length-2;i+=2){
+    const ax=p[i],ay=p[i+1],bx=p[i+2],by=p[i+3],dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;
+    const t=l?Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l)):0;
+    if(Math.hypot(ax+t*dx-x,ay+t*dy-y)<=R)return true;
+  }
+  return false;
+}
+// every change records the previous stroke lists of the surfaces it touched
+function commit(snaps){
+  undoStack.push(snaps);if(undoStack.length>200)undoStack.shift();
+  saveInk();refreshClear();syncTools();
+}
+function undo(){
+  const snaps=undoStack.pop();if(!snaps)return;
+  snaps.forEach(([k,list])=>{INK[k]=list;const s=SURF.get(k);if(s)sizeSurf(s)});
+  saveInk();refreshClear();syncTools();
+}
+function refreshClear(){
+  document.querySelectorAll('.inkclr').forEach(b=>{const id=b.dataset.id;b.hidden=!((INK[id]||[]).length||(INK[id+'~stem']||[]).length)});
+}
+$('#qlist')&&$('#qlist').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.classList.contains('morespace')){
+    const id=b.dataset.id;SPACE[id]=Math.min((SPACE[id]||1)+1,5);store('astro-quiz-space',SPACE);
+    b.closest('.qc').querySelector(`.ink[data-k="${CSS.escape(id)}"] .scratch`).style.setProperty('--sp',SPACE[id]);
+    if(SPACE[id]>=5)b.hidden=true;
+  }
+  else if(b.classList.contains('inkclr')){
+    const ks=[b.dataset.id,b.dataset.id+'~stem'].filter(k=>(INK[k]||[]).length);
+    const snaps=ks.map(k=>[k,INK[k]]);
+    ks.forEach(k=>{INK[k]=[];const s=SURF.get(k);if(s)sizeSurf(s)});
+    if(snaps.length)commit(snaps);
+  }
+  else if(b.dataset.tool){pen.tool=b.dataset.tool;syncTools()}
+  else if(b.dataset.color){pen.color=b.dataset.color;if(pen.tool!=='line')pen.tool='pen';syncTools()}
+  else if(b.id==='undo')undo();
+  else if(b.id==='finger'){pen.finger=!pen.finger;syncTools()}
+});
+// keep a resting palm from scrolling the page mid-stroke
+document.addEventListener('touchmove',e=>{if(active)e.preventDefault()},{passive:false});
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)&&$('#quiz')&&!$('#quiz').hidden){e.preventDefault();undo()}
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>SURF.forEach(redraw));
+
+/* tabs */
+if(MODE.kind==='all'){
+  const TABS=['quiz','teacher'];
+  const show=id=>{if(!TABS.includes(id))id='quiz';TABS.forEach(t=>{document.getElementById(t).hidden=t!==id;document.getElementById('tb-'+t).setAttribute('aria-selected',t===id)})};
+  TABS.forEach(t=>document.getElementById('tb-'+t).addEventListener('click',()=>{show(t);if(history.replaceState)history.replaceState(null,'','#'+t)}));
+  const h=(location.hash||'').slice(1);
+  if(/^r[1-5]$/.test(h))cur=+h[1]-1;
+  show(h==='teacher'?'teacher':'quiz');
+}
+if(MODE.kind!=='teacher'){
+  const sv=load('astro-quiz-seat',null);if(sv)$('#seat').value=sv;
+  $('#sname').value=load('astro-quiz-name','');
+  $('#qlist').addEventListener('change',onPick);
+  if(MODE.kind==='locked')bootLocked();else startRound();
+  flushOutbox(); // anything left from an earlier offline submit
+}
+</script>
+</body></html>
