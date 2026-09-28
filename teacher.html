@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>天文闖關測驗</title>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>天文闖關老師統計</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;800&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -155,24 +155,21 @@ footer a{color:var(--accent);word-break:break-all}
 
 <div class="wrap">
 <header class="top">
-  <span class="eyebrow">地球科學 · 學測天文 · 分回練習</span>
-  <h1>天文闖關測驗</h1>
-  <p class="lede">一共 5 回，由易到難，每週一開放新的一回，每回大約 15 分鐘。交卷後會立刻看到分數和詳解，成績也會自動送給老師。</p>
+  <span class="eyebrow">老師用</span>
+  <h1>天文闖關 · 老師統計</h1>
+  <p class="lede">輸入老師密碼就能看到全班成績，這支手機會記住密碼，下次打開會自動載入。</p>
 </header>
 
-<section class="tab" id="quiz">
-  <div class="rounds" id="rounds"></div>
+<section class="tab" id="teacher">
   <div class="panel">
-    <div class="row">
-      <label class="fld" for="seat">座號</label><input type="text" id="seat" maxlength="2" autocomplete="off" autocapitalize="characters" placeholder="例 12" style="width:90px;font-family:var(--mono)">
-      <label class="fld" for="sname">姓名</label><input type="text" id="sname" maxlength="20" autocomplete="name" placeholder="例 王小明" style="width:140px">
-      <span class="hint">交卷前一定要填，成績會自動送給老師。</span>
-    </div>
-    <p class="hint">可以直接用 Apple Pencil 在題目上畫圖、做記號，手指照常捲動頁面；工具在畫面最下方。沒有觸控筆的話，按下方「手指畫」就能用手指畫（這時要在題目圖片外面捲動）。筆跡會自動存在這台裝置上。</p>
-    <p class="hint">多選題的計分和學測一樣：選項有 n 個，錯 k 個得 (n−2k)/n 題分，最低 0 分。</p>
+    <h2>全班成績統計</h2>
+    <p class="lede">學生交卷時，成績會自動寫進你的 Google 試算表。這裡讀取試算表，整理出每一題的答對率、常見錯誤和作答習慣。</p>
+    <div class="row"><label class="fld" for="tkey">老師密碼</label><input type="password" id="tkey" autocomplete="current-password" style="width:180px"><button class="btn" id="calc">載入最新成績</button><button class="btn ghost" id="demo">看範例資料</button></div>
+    <label class="fld" style="font-weight:400"><input type="checkbox" id="firstonly" checked> 每位學生只算第一次作答（最能反映真實程度）</label>
+    <label class="fld" style="font-weight:400"><input type="checkbox" id="showtest"> 顯示測試資料（座號 TA）</label>
+    <p class="hint" id="calcmsg"></p>
   </div>
-  <div id="qlist" style="display:grid;gap:16px"></div>
-  <div id="result" hidden></div>
+  <div id="stats" style="display:grid;gap:16px"></div>
 </section>
 
 <footer>
@@ -192,14 +189,14 @@ const MULTI={'108-18':5,'108-20':6,'109-33':5,'109-34':5,'111-28':5,'111-30':5,'
 const NOPT={'108-20':6};
 const SELF={};
 const ROUNDS=[
- {name:'暖身',lv:1,ids:[],n:10},
- {name:'基礎',lv:2,ids:[],n:10},
- {name:'觀念',lv:3,ids:[],n:9},
- {name:'應用',lv:4,ids:[],n:9},
- {name:'挑戰',lv:5,ids:[],n:10}
+ {name:'暖身',lv:1,ids:['108-1','109-33','110-20','110-64','111-28','112-41','112-42','114-10','114-11','115-1']},
+ {name:'基礎',lv:2,ids:['113-33','115-2','115-13','115-51','115-56','109-62','112-43','114-12','113-54','S4']},
+ {name:'觀念',lv:3,ids:['S7','S10','108-3','110-63','110-66','111-31','111-33','S1','S3']},
+ {name:'應用',lv:4,ids:['109-6','114-22','115-3','114-23','S6','S9','111-30','108-20','110-22']},
+ {name:'挑戰',lv:5,ids:['108-18','109-34','112-5','113-55','S2','S5','S8','114-13','114-18','110-56']}
 ];
 /* 'all' = 總表 (every round + teacher tab); 'locked' = published site; 'teacher' = 老師統計 */
-const MODE=/*MODE*/{kind:'locked'}/*/MODE*/;
+const MODE=/*MODE*/{kind:'teacher',locked:true}/*/MODE*/;
 /* Google Apps Script web-app URL that writes submissions into the teacher's sheet (see Google試算表程式.gs) */
 const SUBMIT_URL='https://script.google.com/macros/s/AKfycbw8Qd6AknqHgxBaQqe5m7lWvQFVYJkZLFDJCpBWNKAoRt59NlkKlaRuNM9aQvJHwi0dww/exec';
 const LETTERS='ABCDEF';
@@ -493,199 +490,81 @@ function drawText(c,el,k){
   });
 }
 
-/* ink: Apple Pencil (or finger / mouse) notes drawn on top of each question */
-const INK=load('astro-quiz-ink',{}); // surface key -> strokes {t,c,w,p:[x,y,...]}, coords and width ÷ surface width
-const pen=Object.assign({tool:'pen',color:'k',finger:false},load('astro-quiz-pen',{}));
-const undoStack=[];
-const SURF=new Map();
-let active=null, inkSaveT=0;
-const ICON={
-  pen:'<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
-  hl:'<path d="M5 19h6"/><path d="M9 15l-2-2 8-8 4 4-8 8z"/><path d="M7 13l-2 4h4"/>',
-  line:'<path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/>',
-  eraser:'<path d="M8 19l-4-4 9-9 7 7-6 6z"/><path d="M8 19h12"/><path d="M9 10l7 7"/>',
-  undo:'<path d="M9 7L5 11l4 4"/><path d="M5 11h9a5 5 0 010 10h-3"/>',
-  finger:'<path d="M9 11V5a1.5 1.5 0 013 0v5"/><path d="M12 10V8.5a1.5 1.5 0 013 0V11"/><path d="M15 10.5a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1a5 5 0 01-4-2l-3-4a1.5 1.5 0 012.3-1.9L9 15"/>'
-};
-const TOOLS=[['pen','筆'],['hl','螢光筆'],['line','直線'],['eraser','橡皮擦']];
-const COLORS=[['k','黑'],['r','紅'],['b','藍']];
-function svg(n){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`}
-function toolsHTML(){
-  return `<div class="tools" role="toolbar" aria-label="繪圖工具">
-    ${TOOLS.map(([t,n])=>`<button class="tl" data-tool="${t}" aria-pressed="${pen.tool===t}">${svg(t)}${n}</button>`).join('')}
-    <span class="tsep"></span>
-    ${COLORS.map(([c,n])=>`<button class="sw" data-color="${c}" style="--c:var(--pen-${c})" aria-label="${n}色" aria-pressed="${pen.color===c}"></button>`).join('')}
-    <span class="tsep"></span>
-    <button class="tl" id="undo" disabled>${svg('undo')}復原</button>
-    <button class="tl" id="finger" aria-pressed="${pen.finger}">${svg('finger')}手指畫</button>
-  </div>`;
-}
-function syncTools(){
-  document.querySelectorAll('.tl[data-tool]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===pen.tool));
-  document.querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===pen.color&&(pen.tool==='pen'||pen.tool==='line')));
-  const f=$('#finger');if(f)f.setAttribute('aria-pressed',pen.finger);
-  const u=$('#undo');if(u)u.disabled=!undoStack.length;
-  document.body.classList.toggle('finger',pen.finger);
-  store('astro-quiz-pen',pen);
-}
-function saveInk(){clearTimeout(inkSaveT);inkSaveT=setTimeout(()=>{for(const k in INK)if(!INK[k].length)delete INK[k];store('astro-quiz-ink',INK)},300)}
-const ro=new ResizeObserver(es=>es.forEach(e=>{const s=SURF.get(e.target.dataset.k);if(s)sizeSurf(s)}));
-function mountInk(){
-  ro.disconnect();SURF.clear();active=null;
-  document.querySelectorAll('#qlist .ink').forEach(el=>{
-    const cv=document.createElement('canvas');cv.className='inkcv';cv.setAttribute('aria-hidden','true');el.appendChild(cv);
-    const s={k:el.dataset.k,el,cv,ctx:cv.getContext('2d'),w:0,h:0,dpr:1,live:null};
-    SURF.set(s.k,s);bindSurf(s);ro.observe(el);
-  });
-  syncTools();refreshClear();
-}
-// canvases only get pixels once they hold ink, so a round of tall images stays within iPad canvas memory
-function sizeSurf(s){
-  s.w=s.el.clientWidth;s.h=s.el.clientHeight;s.dpr=Math.min(window.devicePixelRatio||1,2);
-  const need=s.w&&s.h&&((INK[s.k]||[]).length||s.live);
-  const W=need?Math.round(s.w*s.dpr):0,H=need?Math.round(s.h*s.dpr):0;
-  if(s.cv.width!==W||s.cv.height!==H){s.cv.width=W;s.cv.height=H}
-  redraw(s);
-}
-function redraw(s){
-  const c=s.ctx;if(!s.cv.width)return;
-  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,s.cv.width,s.cv.height);
-  const cs=getComputedStyle(s.el),col=k=>cs.getPropertyValue('--pen-'+k).trim();
-  const U=s.w*s.dpr;
-  const list=INK[s.k]||[];
-  drawStrokes(c,s.live?list.concat([s.live]):list,U,col);
-  // angle readout while drawing a straight line (0–90° from horizontal)
-  const L=s.live;
-  if(L&&L.t==='line'&&L.p.length===4){
-    const dx=L.p[2]-L.p[0],dy=L.p[3]-L.p[1];
-    if(Math.hypot(dx,dy)*s.w>12){
-      let a=Math.abs(Math.atan2(-dy,dx)*180/Math.PI);if(a>90)a=180-a;
-      const t=Math.round(a)+'°',x=L.p[2]*U+10*s.dpr,y=L.p[3]*U-10*s.dpr;
-      c.font=`500 ${13*s.dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono')}`;
-      const w=c.measureText(t).width;
-      c.fillStyle='rgba(23,32,51,.82)';c.beginPath();c.roundRect?c.roundRect(x-4*s.dpr,y-15*s.dpr,w+8*s.dpr,20*s.dpr,5*s.dpr):c.rect(x-4*s.dpr,y-15*s.dpr,w+8*s.dpr,20*s.dpr);c.fill();
-      c.fillStyle='#fff';c.fillText(t,x,y);
+/* teacher: reads every submission back from the Google Sheet (password-protected) */
+let SUBS=null; // round number -> submissions
+let ANSWERS_LOADED=false;
+async function fetchSubs(){
+  const key=$('#tkey').value.trim();const msg=$('#calcmsg');
+  if(!SUBMIT_URL){msg.innerHTML='<span class="warn">還沒設定收件網址。</span>';return}
+  if(!key){$('#tkey').focus();msg.innerHTML='<span class="warn">請輸入老師密碼。</span>';return}
+  msg.textContent='讀取中…';
+  try{
+    const j=await gasJSON(SUBMIT_URL+'?key='+encodeURIComponent(key));
+    if(!j.ok)throw new Error(j.error||'讀取失敗');
+    store('astro-quiz-tkey',key);
+    // hosted teacher page: the answer key is encrypted in teacher.dat and unlocked by the password
+    if(MODE.locked&&!ANSWERS_LOADED){
+      if(!j.teacherKey)throw new Error('Apps Script 需要更新成最新版本');
+      const d=await decrypt(await (await fetch('teacher.dat',{cache:'no-cache'})).arrayBuffer(),j.teacherKey);
+      d.Q.forEach(q=>{SOL[q.id]=q});Object.assign(SELF,d.SELF);ANSWERS_LOADED=true;
     }
-  }
+    SUBS=j.rounds;renderStats();
+  }catch(e){msg.innerHTML=`<span class="warn">${esc(e.message)}</span>`}
 }
-function drawStrokes(c,list,U,col){
-  for(const st of list){
-    const p=st.p;c.strokeStyle=c.fillStyle=col(st.c);c.lineWidth=st.w*U;c.lineCap='round';c.lineJoin='round';
-    c.beginPath();
-    if(p.length===2){c.arc(p[0]*U,p[1]*U,st.w*U/2,0,Math.PI*2);c.fill();continue}
-    c.moveTo(p[0]*U,p[1]*U);
-    if(p.length===4)c.lineTo(p[2]*U,p[3]*U);
-    else{for(let i=2;i<p.length-2;i+=2)c.quadraticCurveTo(p[i]*U,p[i+1]*U,(p[i]+p[i+2])/2*U,(p[i+1]+p[i+3])/2*U);c.lineTo(p[p.length-2]*U,p[p.length-1]*U)}
-    c.stroke();
-  }
-}
-function canDraw(e){
-  if(e.pointerType==='pen')return true;
-  if(e.pointerType==='mouse')return e.button===0;
-  return pen.finger&&e.isPrimary;
-}
-function bindSurf(s){
-  const cv=s.cv;
-  // Safari reports Apple Pencil as touches too; block scrolling for those so the pencil draws instead
-  const stylus=e=>{if(active||[...e.changedTouches].some(t=>t.touchType==='stylus'))e.preventDefault()};
-  cv.addEventListener('touchstart',stylus,{passive:false});
-  cv.addEventListener('touchmove',stylus,{passive:false});
-  cv.addEventListener('pointerdown',e=>{
-    if(active||!canDraw(e))return;
-    e.preventDefault();
-    try{cv.setPointerCapture(e.pointerId)}catch(_){}
-    const r=cv.getBoundingClientRect();
-    active={s,id:e.pointerId,r,before:(INK[s.k]||[]).slice(),changed:false};
-    const pt=pos(e);
-    if(pen.tool==='eraser'){eraseAt(pt);return}
-    const hl=pen.tool==='hl';
-    s.live={t:pen.tool,c:hl?'h':pen.color,w:(hl?18:pen.tool==='line'?2.2:2.4)/s.w,p:pen.tool==='line'?[pt[0],pt[1],pt[0],pt[1]]:[pt[0],pt[1]]};
-    sizeSurf(s);
+const mmss=s=>`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`;
+function renderStats(){
+  if(!SUBS)return;
+  const firstOnly=$('#firstonly').checked,showTest=$('#showtest').checked;
+  const color=v=>v>=0.7?'var(--good)':v>=0.4?'var(--gold)':'var(--warn)';
+  let nAll=0;const out=[];
+  ROUNDS.forEach((r,ri)=>{
+    const seatNo=s=>s.seat==='TA'?0:+s.seat;
+    let list=(SUBS[ri+1]||[]).slice().sort((a,b)=>seatNo(a)-seatNo(b)||a.attempt-b.attempt);
+    if(!showTest)list=list.filter(s=>s.seat!=='TA');
+    if(firstOnly)list=list.filter(s=>s.attempt===1);
+    if(!list.length)return;
+    nAll+=list.length;
+    const per=r.ids.map((id,qi)=>{
+      const m=meta(id);let n=0,full=0,secs=0,chg=0;const wrong={};
+      list.forEach(s=>{const j=s.ids.indexOf(id);if(j<0)return;n++;const p=s.answers[j];if(grade(m,p)===1)full++;else{const k=p||'未答';wrong[k]=(wrong[k]||0)+1}secs+=s.secs[j]||0;chg+=s.changes[j]||0});
+      const top=Object.entries(wrong).sort((a,b)=>b[1]-a[1])[0];
+      return {id,qi,m,rate:n?full/n:0,secs:n?secs/n:0,chg:n?chg/n:0,top};
+    });
+    const mean=Math.round(list.reduce((a,s)=>a+s.score,0)/list.length);
+    const meanT=list.reduce((a,s)=>a+(s.totalSec||0),0)/list.length;
+    out.push(`<div class="panel"><div class="row" style="justify-content:space-between"><h3>第 ${ri+1} 回 · ${r.name}</h3><span class="hint">${list.length} 份 · 平均 <b class="mono">${mean}</b> 分 · 平均用時 <b class="mono">${mmss(meanT)}</b></span></div>
+      <div class="tblwrap"><table><thead><tr><th>題</th><th>來源</th><th>考點</th><th class="n">答對率</th><th></th><th>最多人選的錯誤答案</th><th class="n">平均用時</th><th class="n">平均改答</th></tr></thead><tbody>
+      ${per.slice().sort((a,b)=>a.rate-b.rate).map(p=>`<tr><td class="mono">${p.qi+1}</td><td class="nw">${p.m.self?'自編 '+p.id.slice(1):p.id}</td><td>${esc(p.m.sk)}</td><td class="n">${Math.round(p.rate*100)}%</td><td><div class="bar"><i style="width:${p.rate*100}%;background:${color(p.rate)}"></i></div></td><td class="mono">${p.top?`${esc(p.top[0])}（${p.top[1]} 人）`:'—'}</td><td class="n">${mmss(p.secs)}</td><td class="n">${p.chg.toFixed(1)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="hint">依答對率由低到高排序，最上面幾題最需要在課堂上講解。「平均改答」是每人在這題平均換了幾次答案，數字高代表很多人猶豫。</p>
+      <details open><summary class="hint" style="cursor:pointer">每位學生</summary><div class="tblwrap"><table class="stu"><thead><tr><th>座號</th><th>姓名</th><th class="n">次</th><th class="n">分數</th><th class="n">用時</th><th>各題選的答案</th><th>作答順序</th></tr></thead><tbody>
+      ${list.map(s=>`<tr><td class="mono">${s.seat}</td><td class="nw">${esc(s.name)}</td><td class="n">${s.attempt}</td><td class="n">${s.score}</td><td class="n">${mmss(s.totalSec||0)}</td><td><div class="dots">${r.ids.map((id,qi)=>{const j=s.ids.indexOf(id);const p=j<0?'':s.answers[j];const g=grade(meta(id),p);const link=s.links&&s.links[id];const tip=`第 ${qi+1} 題：${p||'未答'}，${mmss(j<0?0:s.secs[j])}，改答 ${j<0?0:s.changes[j]} 次${link?'，點開看筆跡':''}`;const cls=`dot ans ${g===1?'ok':g>0?'part':'no'}${link?' ink':''}`;return link?`<a class="${cls}" href="${esc(link)}" target="_blank" rel="noopener" title="${tip}">${p||'—'}</a>`:`<span class="${cls}" title="${tip}">${p||'—'}</span>`}).join('')}</div></td><td class="mono ord">${(s.order||[]).join(' ')}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="hint">方塊依題號排列，裡面是學生選的答案（— 表示沒寫）；綠＝對、黃＝部分、紅＝錯。右上角有 ✎ 的方塊代表學生在那題畫了圖，點下去可以看筆跡。</p></details></div>`);
   });
-  cv.addEventListener('pointermove',e=>{
-    if(!active||active.id!==e.pointerId||active.s!==s)return;
-    e.preventDefault();
-    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];
-    for(const ev of evs.length?evs:[e]){
-      const pt=pos(ev);
-      if(pen.tool==='eraser'){eraseAt(pt);continue}
-      const p=s.live.p;
-      if(s.live.t==='line'){p[2]=pt[0];p[3]=pt[1];continue}
-      if(Math.hypot(pt[0]-p[p.length-2],pt[1]-p[p.length-1])*s.w>=1.2)p.push(pt[0],pt[1]);
-    }
-    paint(s);
-  });
-  const end=e=>{
-    if(!active||active.id!==e.pointerId||active.s!==s)return;
-    const L=s.live;s.live=null;
-    if(L){
-      const tooShort=L.t==='line'&&Math.hypot(L.p[2]-L.p[0],L.p[3]-L.p[1])*s.w<4;
-      if(!tooShort&&e.type!=='pointercancel'){
-        L.p=L.p.map(v=>Math.round(v*1e4)/1e4);
-        (INK[s.k]=INK[s.k]||[]).push(L);active.changed=true;
-      }
-    }
-    if(active.changed)commit([[s.k,active.before]]);
-    active=null;sizeSurf(s);
-  };
-  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  $('#calcmsg').innerHTML=`共 <b>${nAll}</b> 份作答${firstOnly?'（每人只算第一次）':''}${showTest?'，含測試資料':''}。`;
+  $('#stats').innerHTML=out.join('')||'<p class="hint">還沒有學生交卷。</p>';
 }
-function pos(e){const{r,s}=active;return[(e.clientX-r.left)/s.w,(e.clientY-r.top)/s.w]}
-let rafS=null;
-function paint(s){if(rafS)return;rafS=s;requestAnimationFrame(()=>{const t=rafS;rafS=null;redraw(t)})}
-function eraseAt(pt){
-  const s=active.s,list=INK[s.k];if(!list||!list.length)return;
-  const R=12/s.w;
-  const keep=list.filter(st=>!hits(st,pt,R+st.w/2));
-  if(keep.length!==list.length){INK[s.k]=keep;active.changed=true;paint(s)}
+function demoSubs(){
+  // clearly labeled fictional data for rounds 1 and 3
+  let seed=3;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+  const names=['王小明','林怡君','陳柏翰','張雅婷','李承恩','黃詩涵','吳宥廷','劉品妤','蔡宗翰','楊子晴','許家豪','鄭語彤'];
+  const subs={};
+  [0,2].forEach(ri=>{const r=ROUNDS[ri];subs[ri+1]=[];names.forEach((nm,i)=>{for(let a=1;a<=(i%4===0?2:1);a++){
+    const answers=r.ids.map(id=>{const m=meta(id);if(rnd()<0.6+a*0.1)return m.ans;const L=LETTERS[Math.floor(rnd()*m.n)];return m.multi?(L+(m.ans[0]!==L?m.ans[0]:'')).split('').sort().join(''):L});
+    const score=Math.round(r.ids.reduce((t,id,j)=>t+grade(meta(id),answers[j]),0)/r.ids.length*100);
+    const secs=r.ids.map(()=>Math.round(30+rnd()*150));
+    subs[ri+1].push({seat:i+1,name:nm+'（範例）',attempt:a,score,ids:r.ids,answers,secs,changes:r.ids.map(()=>rnd()<0.2?1+Math.floor(rnd()*2):0),order:r.ids.map((_,j)=>j+1).sort(()=>rnd()-0.45),totalSec:secs.reduce((x,y)=>x+y,0),links:{}});
+  }})});
+  return subs;
 }
-function hits(st,[x,y],R){
-  const p=st.p;
-  if(p.length===2)return Math.hypot(p[0]-x,p[1]-y)<=R;
-  for(let i=0;i<p.length-2;i+=2){
-    const ax=p[i],ay=p[i+1],bx=p[i+2],by=p[i+3],dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;
-    const t=l?Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/l)):0;
-    if(Math.hypot(ax+t*dx-x,ay+t*dy-y)<=R)return true;
-  }
-  return false;
-}
-// every change records the previous stroke lists of the surfaces it touched
-function commit(snaps){
-  undoStack.push(snaps);if(undoStack.length>200)undoStack.shift();
-  saveInk();refreshClear();syncTools();
-}
-function undo(){
-  const snaps=undoStack.pop();if(!snaps)return;
-  snaps.forEach(([k,list])=>{INK[k]=list;const s=SURF.get(k);if(s)sizeSurf(s)});
-  saveInk();refreshClear();syncTools();
-}
-function refreshClear(){
-  document.querySelectorAll('.inkclr').forEach(b=>{const id=b.dataset.id;b.hidden=!((INK[id]||[]).length||(INK[id+'~stem']||[]).length)});
-}
-$('#qlist')&&$('#qlist').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  if(b.classList.contains('morespace')){
-    const id=b.dataset.id;SPACE[id]=Math.min((SPACE[id]||1)+1,5);store('astro-quiz-space',SPACE);
-    b.closest('.qc').querySelector(`.ink[data-k="${CSS.escape(id)}"] .scratch`).style.setProperty('--sp',SPACE[id]);
-    if(SPACE[id]>=5)b.hidden=true;
-  }
-  else if(b.classList.contains('inkclr')){
-    const ks=[b.dataset.id,b.dataset.id+'~stem'].filter(k=>(INK[k]||[]).length);
-    const snaps=ks.map(k=>[k,INK[k]]);
-    ks.forEach(k=>{INK[k]=[];const s=SURF.get(k);if(s)sizeSurf(s)});
-    if(snaps.length)commit(snaps);
-  }
-  else if(b.dataset.tool){pen.tool=b.dataset.tool;syncTools()}
-  else if(b.dataset.color){pen.color=b.dataset.color;if(pen.tool!=='line')pen.tool='pen';syncTools()}
-  else if(b.id==='undo')undo();
-  else if(b.id==='finger'){pen.finger=!pen.finger;syncTools()}
-});
-// keep a resting palm from scrolling the page mid-stroke
-document.addEventListener('touchmove',e=>{if(active)e.preventDefault()},{passive:false});
-document.addEventListener('keydown',e=>{
-  if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)&&$('#quiz')&&!$('#quiz').hidden){e.preventDefault();undo()}
-});
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>SURF.forEach(redraw));
+$('#calc').addEventListener('click',fetchSubs);
+$('#demo').addEventListener('click',()=>{if(MODE.locked&&!ANSWERS_LOADED){$('#calcmsg').innerHTML='<span class="warn">請先輸入密碼登入，才能看範例資料。</span>';return}SUBS=demoSubs();renderStats()});
+$('#firstonly').addEventListener('change',renderStats);
+$('#showtest').addEventListener('change',renderStats);
+$('#tkey').value=load('astro-quiz-tkey','');
+$('#tkey').addEventListener('keydown',e=>{if(e.key==='Enter')fetchSubs()});
+if(MODE.kind==='teacher'&&$('#tkey').value)fetchSubs(); // phone bookmark: saved password logs straight in
 
 /* tabs */
 if(MODE.kind==='all'){
