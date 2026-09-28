@@ -256,6 +256,9 @@ function startRound(){
   r.ids.forEach(id=>{(answers[id]||'').split('').forEach(L=>{const el=document.getElementById('o-'+id+'-'+L);if(el)el.checked=true})});
   $('#submit').addEventListener('click',submit);
   $('#result').hidden=true;$('#result').innerHTML='';
+  // a submitted round stays graded (answers, feedback, score) until the student chooses to retake it
+  const sub=load('astro-quiz-sub-'+cur,null);
+  if(sub){answers=sub.answers;r.ids.forEach(id=>{(answers[id]||'').split('').forEach(L=>{const el=document.getElementById('o-'+id+'-'+L);if(el)el.checked=true})});showGraded(sub,false);return}
   updateProg();
 }
 function onPick(e){
@@ -358,37 +361,49 @@ function submit(){
   const r=ROUNDS[cur];const blanks=r.ids.filter(id=>!answers[id]).length;
   const btn=$('#submit');
   if(blanks&&btn.dataset.confirm!=='1'){btn.dataset.confirm='1';btn.textContent=`還有 ${blanks} 題沒寫，確定交卷`;return}
+  const rec={uid:Date.now().toString(36)+Math.random().toString(36).slice(2,8),round:cur+1,seat,name,test,at:new Date().toISOString(),
+    ids:r.ids.slice(),answers:r.ids.map(id=>answers[id]||''),
+    secs:r.ids.map(id=>habit.secs[id]||0),changes:r.ids.map(id=>habit.changes[id]||0),
+    order:habit.order.map(id=>r.ids.indexOf(id)+1).filter(n=>n>0),totalSec:habit.total};
+  const sub={uid:rec.uid,seat,name,answers:Object.assign({},answers),attempt:null};
+  store('astro-quiz-sub-'+cur,sub);
+  try{localStorage.removeItem('astro-quiz-draft-'+cur);localStorage.removeItem('astro-quiz-habit-'+cur)}catch(e){}
+  const {pct,marks}=showGraded(sub,true);
+  rec.score=pct;rec.marks=marks.map(g=>Math.round(g*100)/100);
+  sendRecord(rec);
+}
+function showGraded(sub,fresh){
   submitted=true;
-  let total=0;const marks=[];
+  const r=ROUNDS[cur];let total=0;const marks=[];
   r.ids.forEach((id,i)=>{
-    const m=meta(id);const p=answers[id]||'';const g=grade(m,p);total+=g;marks.push(g);
+    const m=meta(id);const p=sub.answers[id]||'';const g=grade(m,p);total+=g;marks.push(g);
     document.querySelectorAll(`input[name="a-${id}"]`).forEach(x=>{x.disabled=true;if(m.ans.includes(x.value))x.parentElement.classList.add('right')});
     const cls=g===1?'ok':g>0?'part':'no';
     const verdict=g===1?'答對':g>0?`部分得分 ${Math.round(g*100)}%`:(p?'答錯':'未作答');
     document.querySelector(`#c-${CSS.escape(id)} .fbwrap`).innerHTML=`<div class="fb ${cls}"><p><span class="v">${verdict}</span>　你的答案 <span class="mono">${p||'—'}</span>　正確答案 <span class="mono">${m.ans}</span>　<span class="hint">練到：${esc(m.sk)}</span></p><p>${m.sol}</p><p class="trap"><b>陷阱　</b>${m.trap}</p></div>`;
   });
   const pct=Math.round(total/r.ids.length*100);
-  doneMap[cur]=pct;store('astro-quiz-done',doneMap);
-  btn.disabled=true;btn.textContent='已交卷';
+  if(fresh){doneMap[cur]=pct;store('astro-quiz-done',doneMap)}
+  const btn=$('#submit');btn.disabled=true;btn.textContent='已交卷';
+  $('#prog').textContent='';
   renderRounds();
   const res=$('#result');
   res.innerHTML=`<div class="result">
-    <span class="eyebrow">第 ${cur+1} 回 · ${ROUNDS[cur].name} · 座號 ${seat} ${esc(name)}</span>
+    <span class="eyebrow">第 ${cur+1} 回 · ${ROUNDS[cur].name} · 座號 ${sub.seat} ${esc(sub.name)}</span>
     <div class="score">${pct}<small> 分</small></div>
     <div class="dots">${r.ids.map((id,i)=>{const g=marks[i];return `<a class="dot ${g===1?'ok':g>0?'part':'no'}" href="#c-${id}" title="第 ${i+1} 題">${i+1}</a>`}).join('')}</div>
     <div class="grid2"><div style="display:grid;gap:8px;align-content:start"><b>成績送出</b><p id="sendmsg" class="hint">正在準備…</p><div><button class="btn" id="resend" hidden>重新送出</button></div></div>
-    <div style="display:grid;gap:6px;align-content:start"><b>接下來</b><p class="hint">每題下方都有詳解和陷阱，先把錯的題目看完。${nextHTML()}</div></div>
+    <div style="display:grid;gap:6px;align-content:start"><b>接下來</b><p class="hint">每題下方都有詳解和陷阱，先把錯的題目看完。${nextHTML()}
+      <p class="hint">想再練一次這一回，可以按「重新作答」：答案會清空，筆跡保留（不需要的話按各題的「清除筆跡」），成績會記成下一次作答。</p><div><button class="btn ghost" id="retake">重新作答</button></div></div></div>
   </div>`;
   res.hidden=false;
   $('#resend').addEventListener('click',flushOutbox);
+  $('#retake').addEventListener('click',()=>{try{localStorage.removeItem('astro-quiz-sub-'+cur)}catch(e){}startRound();window.scrollTo({top:0})});
   const nx=$('#next');if(nx)nx.addEventListener('click',()=>{openRound(cur+1);window.scrollTo({top:0})});
-  const rec={uid:Date.now().toString(36)+Math.random().toString(36).slice(2,8),round:cur+1,seat,name,test,score:pct,at:new Date().toISOString(),
-    ids:r.ids.slice(),answers:r.ids.map(id=>answers[id]||''),marks:marks.map(g=>Math.round(g*100)/100),
-    secs:r.ids.map(id=>habit.secs[id]||0),changes:r.ids.map(id=>habit.changes[id]||0),
-    order:habit.order.map(id=>r.ids.indexOf(id)+1).filter(n=>n>0),totalSec:habit.total};
-  try{localStorage.removeItem('astro-quiz-draft-'+cur);localStorage.removeItem('astro-quiz-habit-'+cur)}catch(e){}
-  res.scrollIntoView({block:'start'});
-  sendRecord(rec);
+  if(fresh)res.scrollIntoView({block:'start'});
+  else if(load('astro-quiz-outbox',[]).some(x=>x.uid===sub.uid))setSend('<span class="warn">這次作答還沒送到老師那裡。</span>確認有連上網路後按「重新送出」。',true);
+  else setSend(`<span class="sent">✓ 已送到老師那裡</span>${sub.attempt?`　第 ${cur+1} 回・第 ${sub.attempt} 次作答`:''}`,false);
+  return {pct,marks};
 }
 
 /* sending: every submission goes to an outbox on this device first, so nothing is lost offline */
@@ -413,6 +428,7 @@ async function flushOutbox(){
       const res=await fetch(SUBMIT_URL,{method:'POST',body:JSON.stringify(rec),signal:ctl.signal});clearTimeout(t);
       const j=await res.json();if(!j.ok)throw new Error(j.error||'收件端錯誤');
       last={rec,j};
+      const sub=load('astro-quiz-sub-'+(rec.round-1),null);if(sub&&sub.uid===rec.uid){sub.attempt=j.attempt;store('astro-quiz-sub-'+(rec.round-1),sub)}
       store('astro-quiz-outbox',load('astro-quiz-outbox',[]).filter(x=>x.uid!==rec.uid));
     }catch(e){fail=e.name==='AbortError'?new Error('連線逾時'):e instanceof TypeError?new Error('沒有連上網路'):e;break}
   }
